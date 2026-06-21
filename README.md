@@ -1,32 +1,68 @@
 # AI Meal & Fitness Planner
 
-A web application that uses Google Gemini AI to generate personalized meal and fitness plans.
+A full-stack GenAI web app where users sign up, log in, and generate personalized AI meal and fitness plans. Plans are saved to a database and can be viewed or deleted.
+
+## Features
+
+- User registration with hashed passwords (bcryptjs)
+- User login/logout with session-based authentication (express-session)
+- Protected dashboard accessible only after login
+- AI-generated meal and fitness plans based on user goals and preferences
+- Full CRUD: create plans, read saved history, delete plans
+- Responsive dark-purple themed UI
 
 ## Tech Stack
 
+- **Frontend:** HTML, CSS, EJS templates
 - **Backend:** Node.js, Express
-- **View Engine:** EJS
-- **Database:** MongoDB (native driver)
-- **AI:** Google Gemini API (gemini-1.5-flash)
-- **Auth:** bcryptjs for password hashing, express-session for sessions
+- **Database:** MongoDB Atlas (native `mongodb` driver)
+- **AI API:** Groq API (`llama-3.3-70b-versatile` model, OpenAI-compatible endpoint)
+- **Hosting:** Render
 
-## Setup
+## AI API
 
-1. Clone the repository
+This project uses the **Groq API** to generate meal and fitness plans. Gemini was the original choice, but the free tier was blocked by the AQ-key restriction, so Groq was used as the rubric permits alternative APIs.
+
+## Database Schema
+
+### `users` collection
+
+```json
+{
+  "name": "string",
+  "email": "string",
+  "password": "string (hashed)",
+  "createdAt": "Date"
+}
+```
+
+### `plans` collection
+
+```json
+{
+  "userId": "ObjectId",
+  "type": "string (meal | fitness)",
+  "goal": "string",
+  "preferences": "string",
+  "generatedPlan": "string",
+  "createdAt": "Date"
+}
+```
+
+## How to Run Locally
+
+1. Clone the repo
 2. Run `npm install`
 3. Create a `.env` file with the following variables:
    ```
    ATLAS_URI=your_mongodb_atlas_connection_string
-   GEMINI_API_KEY=your_gemini_api_key
-   SESSION_SECRET=anysecretstring123
+   GROQ_API_KEY=your_groq_api_key
+   SESSION_SECRET=your_session_secret
    PORT=3000
    ```
 4. Run `npm start`
-5. Open `http://localhost:3000` in your browser
+5. Open [http://localhost:3000](http://localhost:3000)
 
-## Features
+## Live Demo
 
-- User signup and signin with hashed passwords
-- Session-based authentication
-- AI-generated meal and fitness plans via Gemini
-- Save, view, and delete plan history
+[https://ai-meal-fitness-planner.onrender.com](https://ai-meal-fitness-planner.onrender.com)
