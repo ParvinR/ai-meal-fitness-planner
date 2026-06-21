@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <span class="nav-brand">AI Meal & Fitness Planner</span>
+    <div class="nav-right">
+      <span class="nav-user">Welcome, <%= user.name %></span>
+      <a href="/users/signout" class="btn btn-sm">Sign Out</a>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <!-- Generator Section -->
+    <div class="card">
+      <h2>Generate a Plan</h2>
+      <form id="generateForm">
+        <div class="form-group">
+          <label for="type">Plan Type</label>
+          <select id="type" name="type" required>
+            <option value="meal">Meal Plan</option>
+            <option value="fitness">Fitness Plan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="goal">Your Goal</label>
+          <input type="text" id="goal" name="goal" placeholder="e.g. Lose weight, Build muscle, Eat healthier" required>
+        </div>
+        <div class="form-group">
+          <label for="preferences">Preferences (optional)</label>
+          <input type="text" id="preferences" name="preferences" placeholder="e.g. Vegetarian, No dairy, Beginner level">
+        </div>
+        <button type="submit" class="btn" id="generateBtn">Generate Plan</button>
+      </form>
+    </div>
+
+    <!-- AI Result Section -->
+    <div id="resultSection" class="card" style="display: none;">
+      <h2>Your Generated Plan</h2>
+      <div id="planResult" class="plan-content"></div>
+    </div>
+
+    <!-- History Section -->
+    <div class="card">
+      <h2>Saved Plans</h2>
+      <div id="historyList" class="history-list">
+        <p class="loading-text">Loading plans...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load history on page load
+    document.addEventListener('DOMContentLoaded', loadHistory);
+
+    // Generate plan form submission
+    document.getElementById('generateForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      var btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      var type = document.getElementById('type').value;
+      var goal = document.getElementById('goal').value;
+      var preferences = document.getElementById('preferences').value;
+
+      try {
+        var response = await fetch('/users/plan/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: type, goal: goal, preferences: preferences })
+        });
+
+        var data = await response.json();
+
+        if (data.success) {
+          var resultSection = document.getElementById('resultSection');
+          var planResult = document.getElementById('planResult');
+
+          // format the plan text with line breaks
+          planResult.innerHTML = formatPlan(data.plan.generatedPlan);
+          resultSection.style.display = 'block';
+          resultSection.scrollIntoView({ behavior: 'smooth' });
+
+          // reload history
+          loadHistory();
+        } else {
+          alert(data.error || 'Failed to generate plan');
+        }
+      } catch (err) {
+        alert('Failed to generate plan. Please try again.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Generate Plan';
+    });
+
+    // Load saved plans history
+    async function loadHistory() {
+      var historyList = document.getElementById('historyList');
+
+      try {
+        var response = await fetch('/users/plan/history');
+        var data = await response.json();
+
+        if (data.success && data.plans.length > 0) {
+          historyList.innerHTML = '';
+          data.plans.forEach(function (plan) {
+            var planDiv = document.createElement('div');
+            planDiv.className = 'history-item';
+            planDiv.innerHTML =
+              '<div class="history-header">' +
+                '<div>' +
+                  '<strong>' + capitalize(plan.type) + ' Plan</strong>' +
+                  '<span class="history-date"> — ' + new Date(plan.createdAt).toLocaleDateString() + '</span>' +
+                '</div>' +
+                '<button class="btn btn-danger btn-sm" onclick="deletePlan(\'' + plan._id + '\')">Delete</button>' +
+              '</div>' +
+              '<p class="history-goal"><em>Goal: ' + escapeHtml(plan.goal) + '</em></p>' +
+              '<div class="history-plan-text">' + formatPlan(plan.generatedPlan) + '</div>';
+            historyList.appendChild(planDiv);
+          });
+        } else {
+          historyList.innerHTML = '<p class="empty-text">No saved plans yet. Generate your first plan above!</p>';
+        }
+      } catch (err) {
+        historyList.innerHTML = '<p class="empty-text">Failed to load plans.</p>';
+      }
+    }
+
+    // Delete a plan
+    async function deletePlan(id) {
+      if (!confirm('Are you sure you want to delete this plan?')) return;
+
+      try {
+        var response = await fetch('/users/plan/' + id, { method: 'DELETE' });
+        var data = await response.json();
+        if (data.success) {
+          loadHistory();
+        }
+      } catch (err) {
+        alert('Failed to delete plan.');
+      }
+    }
+
+    // Format plan text into HTML
+    function formatPlan(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/#{1,3}\s*(.*)/g, '<h3>$1</h3>')
+        .replace(/\n/g, '<br>');
+    }
+
+    // Capitalize first letter
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(text));
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
