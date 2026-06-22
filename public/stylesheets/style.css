@@ -294,6 +294,39 @@ body {
   padding: 1rem 0;
 }
 
+/* ---------- History actions ---------- */
+.history-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---------- Profile ---------- */
+.profile-subtitle {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.success-msg {
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 600px) {
   .navbar {

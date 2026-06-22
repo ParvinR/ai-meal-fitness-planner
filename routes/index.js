@@ -30,4 +30,10 @@ router.get('/dashboard', function (req, res) {
   res.render('dashboard', { title: 'Dashboard', user: req.session.user });
 });
 
+// GET /profile → render profile page (protected)
+router.get('/profile', function (req, res) {
+  if (!req.session.user) return res.redirect('/signin');
+  res.render('profile', { title: 'My Profile', user: req.session.user });
+});
+
 module.exports = router;

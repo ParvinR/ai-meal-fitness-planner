@@ -11,6 +11,7 @@
     <span class="nav-brand">AI Meal & Fitness Planner</span>
     <div class="nav-right">
       <span class="nav-user">Welcome, <%= user.name %></span>
+      <a href="/profile" class="btn btn-sm">My Profile</a>
       <a href="/users/signout" class="btn btn-sm">Sign Out</a>
     </div>
   </nav>
@@ -120,7 +121,10 @@
                   '<strong>' + capitalize(plan.type) + ' Plan</strong>' +
                   '<span class="history-date"> — ' + new Date(plan.createdAt).toLocaleDateString() + '</span>' +
                 '</div>' +
+                '<div class="history-actions">' +
+                '<button class="btn btn-sm" onclick="editPlan(\'' + plan._id + '\')">Edit</button>' +
                 '<button class="btn btn-danger btn-sm" onclick="deletePlan(\'' + plan._id + '\')">Delete</button>' +
+                '</div>' +
               '</div>' +
               '<p class="history-goal"><em>Goal: ' + escapeHtml(plan.goal) + '</em></p>' +
               '<div class="history-plan-text">' + formatPlan(plan.generatedPlan) + '</div>';
@@ -146,6 +150,29 @@
         }
       } catch (err) {
         alert('Failed to delete plan.');
+      }
+    }
+
+    // Edit a plan
+    async function editPlan(id) {
+      var newGoal = prompt('Enter new goal:');
+      if (!newGoal) return;
+      var newPreferences = prompt('Enter new preferences (optional):');
+
+      try {
+        var response = await fetch('/users/plan/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: newGoal, preferences: newPreferences || '' })
+        });
+        var data = await response.json();
+        if (data.success) {
+          loadHistory();
+        } else {
+          alert(data.error || 'Failed to update plan');
+        }
+      } catch (err) {
+        alert('Failed to update plan.');
       }
     }
 

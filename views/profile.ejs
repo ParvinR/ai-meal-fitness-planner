@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <span class="nav-brand">AI Meal & Fitness Planner</span>
+    <div class="nav-right">
+      <span class="nav-user">Welcome, <%= user.name %></span>
+      <a href="/dashboard" class="btn btn-sm">Dashboard</a>
+      <a href="/users/signout" class="btn btn-sm">Sign Out</a>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <div class="card">
+      <h2>My Profile</h2>
+      <p class="profile-subtitle">Fill in your details for personalized plans. All fields are optional.</p>
+
+      <div id="profileMsg" class="success-msg" style="display: none;">Profile saved successfully!</div>
+
+      <form id="profileForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="age">Age</label>
+            <input type="number" id="age" name="age" placeholder="e.g. 25" min="1" max="120">
+          </div>
+          <div class="form-group">
+            <label for="sex">Sex</label>
+            <select id="sex" name="sex">
+              <option value="">Select...</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="weight">Weight (kg)</label>
+            <input type="number" id="weight" name="weight" placeholder="e.g. 70" min="1" step="0.1">
+          </div>
+          <div class="form-group">
+            <label for="height">Height (cm)</label>
+            <input type="number" id="height" name="height" placeholder="e.g. 175" min="1">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="experience">Training Experience</label>
+          <select id="experience" name="experience">
+            <option value="">Select...</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="activityLevel">Activity Level</label>
+          <select id="activityLevel" name="activityLevel">
+            <option value="">Select...</option>
+            <option value="sedentary">Sedentary</option>
+            <option value="light">Light</option>
+            <option value="moderate">Moderate</option>
+            <option value="active">Active</option>
+            <option value="very active">Very Active</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="dietaryType">Dietary Type</label>
+          <select id="dietaryType" name="dietaryType">
+            <option value="">None</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="keto">Keto</option>
+            <option value="halal">Halal</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="restrictions">Restrictions / Injuries</label>
+          <input type="text" id="restrictions" name="restrictions" placeholder="e.g. Bad knees, gluten-free">
+        </div>
+
+        <button type="submit" class="btn" id="saveProfileBtn">Save Profile</button>
+      </form>
+
+      <p class="switch-link"><a href="/dashboard">Back to Dashboard</a></p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', loadProfile);
+
+    async function loadProfile() {
+      try {
+        var response = await fetch('/users/profile');
+        var data = await response.json();
+        if (data.success && data.profile) {
+          var p = data.profile;
+          if (p.age) document.getElementById('age').value = p.age;
+          if (p.weight) document.getElementById('weight').value = p.weight;
+          if (p.height) document.getElementById('height').value = p.height;
+          if (p.sex) document.getElementById('sex').value = p.sex;
+          if (p.experience) document.getElementById('experience').value = p.experience;
+          if (p.activityLevel) document.getElementById('activityLevel').value = p.activityLevel;
+          if (p.dietaryType) document.getElementById('dietaryType').value = p.dietaryType;
+          if (p.restrictions) document.getElementById('restrictions').value = p.restrictions;
+        }
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      var btn = document.getElementById('saveProfileBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      var body = {
+        age: document.getElementById('age').value || null,
+        weight: document.getElementById('weight').value || null,
+        height: document.getElementById('height').value || null,
+        sex: document.getElementById('sex').value || null,
+        experience: document.getElementById('experience').value || null,
+        activityLevel: document.getElementById('activityLevel').value || null,
+        dietaryType: document.getElementById('dietaryType').value || null,
+        restrictions: document.getElementById('restrictions').value || ''
+      };
+
+      try {
+        var response = await fetch('/users/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        var data = await response.json();
+
+        if (data.success) {
+          var msg = document.getElementById('profileMsg');
+          msg.style.display = 'block';
+          setTimeout(function () { msg.style.display = 'none'; }, 3000);
+        } else {
+          alert(data.error || 'Failed to save profile');
+        }
+      } catch (err) {
+        alert('Failed to save profile. Please try again.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Save Profile';
+    });
+  </script>
+</body>
+</html>

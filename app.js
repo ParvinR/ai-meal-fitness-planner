@@ -1,6 +1,7 @@
 var express = require('express');
 var path = require('path');
 var session = require('express-session');
+var MongoStore = require('connect-mongo').MongoStore;
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -19,7 +20,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.ATLAS_URI,
+    dbName: 'fitplanner'
+  })
 }));
 
 // make session user available in all EJS templates

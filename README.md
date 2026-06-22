@@ -8,7 +8,9 @@ A full-stack GenAI web app where users sign up, log in, and generate personalize
 - User login/logout with session-based authentication (express-session)
 - Protected dashboard accessible only after login
 - AI-generated meal and fitness plans based on user goals and preferences
-- Full CRUD: create plans, read saved history, delete plans
+- Full CRUD: create plans, read saved history, update plans, delete plans
+- User profiles with personalized plan generation
+- MongoDB-backed session store (connect-mongo)
 - Responsive dark-purple themed UI
 
 ## Tech Stack
@@ -45,7 +47,25 @@ This project uses the **Groq API** to generate meal and fitness plans. Gemini wa
   "goal": "string",
   "preferences": "string",
   "generatedPlan": "string",
-  "createdAt": "Date"
+  "createdAt": "Date",
+  "updatedAt": "Date (set on update)"
+}
+```
+
+### `profiles` collection
+
+```json
+{
+  "userId": "ObjectId",
+  "age": "number",
+  "weight": "number (kg)",
+  "height": "number (cm)",
+  "sex": "string (male | female | other)",
+  "experience": "string (beginner | intermediate | advanced)",
+  "activityLevel": "string (sedentary | light | moderate | active | very active)",
+  "dietaryType": "string (none | vegetarian | vegan | keto | halal | other)",
+  "restrictions": "string",
+  "updatedAt": "Date"
 }
 ```
 
