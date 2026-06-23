@@ -101,71 +101,80 @@ router.post('/plan/generate', async function (req, res) {
       profileText = ' Personalize for: age ' + (profile.age || 'N/A') + ', weight ' + (profile.weight || 'N/A') + 'kg, height ' + (profile.height || 'N/A') + 'cm, sex ' + (profile.sex || 'N/A') + ', experience ' + (profile.experience || 'N/A') + ', activity level ' + (profile.activityLevel || 'N/A') + ', dietary type ' + (profile.dietaryType || 'none') + ', restrictions/injuries: ' + (profile.restrictions || 'none') + '.';
     }
 
-    var prompt = '';
-    if (type === 'meal') {
-      prompt = 'You are a professional nutritionist. Create a detailed daily meal plan for someone with the following goal: ' + goal + '. Preferences: ' + (preferences || 'none') + '.' + profileText + ' Include breakfast, lunch, dinner, and 2 snacks. For each meal provide the name, ingredients, brief instructions, and estimated calories. Format your response in clean readable text with clear sections.';
-    } else {
-      prompt = 'You are a professional fitness trainer. Create a detailed daily workout plan for someone with the following goal: ' + goal + '. Preferences: ' + (preferences || 'none') + '.' + profileText + ' Include warm-up, main exercises (with sets, reps, and rest time), and cool-down. Format your response in clean readable text with clear sections.';
+    var mealPrompt = 'You are a professional nutritionist. Create a detailed daily meal plan for someone with the following goal: ' + goal + '. Preferences: ' + (preferences || 'none') + '.' + profileText + ' Include breakfast, lunch, dinner, and 2 snacks. For each meal provide the name, ingredients, brief instructions, and estimated calories. Format your response in clean readable text with clear sections.';
+    var fitnessPrompt = 'You are a professional fitness trainer. Create a detailed daily workout plan for someone with the following goal: ' + goal + '. Preferences: ' + (preferences || 'none') + '.' + profileText + ' Include warm-up, main exercises (with sets, reps, and rest time), and cool-down. Format your response in clean readable text with clear sections.';
+
+    async function callGroq(promptText) {
+      var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + process.env.GROQ_API_KEY
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: promptText }]
+        })
+      });
+      if (!resp.ok) {
+        var errText = await resp.text();
+        console.error('Groq API error:', resp.status, errText);
+        return { error: 'AI service error. Please try again in a moment.' };
+      }
+      var d = await resp.json();
+      if (!d.choices || !d.choices[0] || !d.choices[0].message) {
+        console.error('Unexpected Groq response:', JSON.stringify(d));
+        return { error: 'AI returned an unexpected response. Please try again.' };
+      }
+      return { content: d.choices[0].message.content };
     }
 
-    var response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.GROQ_API_KEY
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!response.ok) {
-      var errText = await response.text();
-      console.error('Groq API error:', response.status, errText);
-      return res.status(502).json({ error: 'AI service error. Please try again in a moment.' });
-    }
-    var data = await response.json();
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Unexpected Groq response:', JSON.stringify(data));
-      return res.status(502).json({ error: 'AI returned an unexpected response. Please try again.' });
-    }
-    var generatedPlan = data.choices[0].message.content;
+    if (type === 'both') {
+      var mealResult = await callGroq(mealPrompt);
+      if (mealResult.error) return res.status(502).json({ error: mealResult.error });
+      var fitnessResult = await callGroq(fitnessPrompt);
+      if (fitnessResult.error) return res.status(502).json({ error: fitnessResult.error });
 
-    // save plan to MongoDB (skip if DB not available)
+      var plansCol = getCollection('plans');
+      var mealInsert = await plansCol.insertOne({
+        userId: req.session.user.id, type: 'meal', goal: goal,
+        preferences: preferences || '', generatedPlan: mealResult.content, createdAt: new Date()
+      });
+      var fitnessInsert = await plansCol.insertOne({
+        userId: req.session.user.id, type: 'fitness', goal: goal,
+        preferences: preferences || '', generatedPlan: fitnessResult.content, createdAt: new Date()
+      });
+
+      return res.json({
+        success: true,
+        plans: [
+          { _id: mealInsert.insertedId, type: 'meal', goal: goal, preferences: preferences || '', generatedPlan: mealResult.content, createdAt: new Date() },
+          { _id: fitnessInsert.insertedId, type: 'fitness', goal: goal, preferences: preferences || '', generatedPlan: fitnessResult.content, createdAt: new Date() }
+        ]
+      });
+    }
+
+    var prompt = type === 'meal' ? mealPrompt : fitnessPrompt;
+    var result = await callGroq(prompt);
+    if (result.error) return res.status(502).json({ error: result.error });
+    var generatedPlan = result.content;
+
     if (!isConnected()) {
       return res.json({
         success: true,
-        plan: {
-          _id: null,
-          type: type,
-          goal: goal,
-          preferences: preferences || '',
-          generatedPlan: generatedPlan,
-          createdAt: new Date()
-        }
+        plan: { _id: null, type: type, goal: goal, preferences: preferences || '', generatedPlan: generatedPlan, createdAt: new Date() }
       });
     }
 
     var plansCol = getCollection('plans');
     var insertResult = await plansCol.insertOne({
-      userId: req.session.user.id,
-      type: type,
-      goal: goal,
-      preferences: preferences || '',
-      generatedPlan: generatedPlan,
-      createdAt: new Date()
+      userId: req.session.user.id, type: type, goal: goal,
+      preferences: preferences || '', generatedPlan: generatedPlan, createdAt: new Date()
     });
 
     res.json({
       success: true,
-      plan: {
-        _id: insertResult.insertedId,
-        type: type,
-        goal: goal,
-        preferences: preferences || '',
-        generatedPlan: generatedPlan,
-        createdAt: new Date()
-      }
+      plan: { _id: insertResult.insertedId, type: type, goal: goal, preferences: preferences || '', generatedPlan: generatedPlan, createdAt: new Date() }
     });
   } catch (err) {
     console.error('=== PLAN GENERATION ERROR ===');

@@ -183,13 +183,15 @@ body {
 
 /* ---------- Dashboard ---------- */
 .dashboard-container {
-  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin: 2rem auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
 }
 
 .dashboard-container .card {
-  max-width: 100%;
+  width: 100%;
   margin-bottom: 1.5rem;
 }
 
@@ -203,6 +205,78 @@ body {
 
 .dashboard-container .btn {
   width: 100%;
+}
+
+.generate-card {
+  max-width: 600px;
+}
+
+.history-card {
+  max-width: 1200px;
+}
+
+/* ---------- Plan type toggle ---------- */
+.plan-type-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.plan-type-btn {
+  flex: 1;
+  padding: 0.6rem 0.5rem;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plan-type-btn:hover {
+  border-color: #7c3aed;
+  color: #5b21b6;
+}
+
+.plan-type-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  color: #ffffff;
+  border-color: #7c3aed;
+}
+
+/* ---------- Spinner ---------- */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid #e0d7f5;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-text {
+  color: #5b21b6;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.plan-divider {
+  border: none;
+  border-top: 2px solid #e0d7f5;
+  margin: 1.5rem 0;
 }
 
 /* ---------- Plan result ---------- */
@@ -239,7 +313,7 @@ body {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .history-header {
@@ -268,11 +342,11 @@ body {
   background: #f3f0ff;
   border: 1px solid #e0d7f5;
   border-radius: 6px;
-  padding: 1rem;
-  line-height: 1.6;
+  padding: 1.25rem 1.5rem;
+  line-height: 1.7;
   color: #1f2937;
-  font-size: 0.88rem;
-  max-height: 300px;
+  font-size: 0.9rem;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -346,5 +420,9 @@ body {
   .form-row {
     flex-direction: column;
     gap: 0;
+  }
+
+  .plan-type-group {
+    flex-direction: column;
   }
 }

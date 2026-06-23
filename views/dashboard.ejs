@@ -18,15 +18,16 @@
 
   <div class="dashboard-container">
     <!-- Generator Section -->
-    <div class="card">
+    <div class="card generate-card">
       <h2>Generate a Plan</h2>
       <form id="generateForm">
         <div class="form-group">
-          <label for="type">Plan Type</label>
-          <select id="type" name="type" required>
-            <option value="meal">Meal Plan</option>
-            <option value="fitness">Fitness Plan</option>
-          </select>
+          <label>Plan Type</label>
+          <div class="plan-type-group">
+            <button type="button" class="plan-type-btn active" data-type="meal">Meal Plan</button>
+            <button type="button" class="plan-type-btn" data-type="fitness">Fitness Plan</button>
+            <button type="button" class="plan-type-btn" data-type="both">Both</button>
+          </div>
         </div>
         <div class="form-group">
           <label for="goal">Your Goal</label>
@@ -41,13 +42,13 @@
     </div>
 
     <!-- AI Result Section -->
-    <div id="resultSection" class="card" style="display: none;">
+    <div id="resultSection" class="card generate-card" style="display: none;">
       <h2>Your Generated Plan</h2>
       <div id="planResult" class="plan-content"></div>
     </div>
 
     <!-- History Section -->
-    <div class="card">
+    <div class="card history-card">
       <h2>Saved Plans</h2>
       <div id="historyList" class="history-list">
         <p class="loading-text">Loading plans...</p>
@@ -56,8 +57,20 @@
   </div>
 
   <script>
+    var selectedType = 'meal';
+
     // Load history on page load
-    document.addEventListener('DOMContentLoaded', loadHistory);
+    document.addEventListener('DOMContentLoaded', function () {
+      loadHistory();
+
+      document.querySelectorAll('.plan-type-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.plan-type-btn').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          selectedType = btn.getAttribute('data-type');
+        });
+      });
+    });
 
     // Generate plan form submission
     document.getElementById('generateForm').addEventListener('submit', async function (e) {
@@ -67,7 +80,12 @@
       btn.disabled = true;
       btn.textContent = 'Generating...';
 
-      var type = document.getElementById('type').value;
+      var resultSection = document.getElementById('resultSection');
+      var planResult = document.getElementById('planResult');
+      resultSection.style.display = 'block';
+      planResult.innerHTML = '<div class="spinner-container"><div class="spinner"></div><p class="spinner-text">Generating your plan<span class="dots"></span></p></div>';
+      resultSection.scrollIntoView({ behavior: 'smooth' });
+
       var goal = document.getElementById('goal').value;
       var preferences = document.getElementById('preferences').value;
 
@@ -75,26 +93,28 @@
         var response = await fetch('/users/plan/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: type, goal: goal, preferences: preferences })
+          body: JSON.stringify({ type: selectedType, goal: goal, preferences: preferences })
         });
 
         var data = await response.json();
 
         if (data.success) {
-          var resultSection = document.getElementById('resultSection');
-          var planResult = document.getElementById('planResult');
-
-          // format the plan text with line breaks
-          planResult.innerHTML = formatPlan(data.plan.generatedPlan);
-          resultSection.style.display = 'block';
-          resultSection.scrollIntoView({ behavior: 'smooth' });
-
-          // reload history
+          if (data.plans) {
+            planResult.innerHTML = data.plans.map(function (p) {
+              return '<h3>' + capitalize(p.type) + ' Plan</h3>' + formatPlan(p.generatedPlan);
+            }).join('<hr class="plan-divider">');
+          } else {
+            planResult.innerHTML = formatPlan(data.plan.generatedPlan);
+          }
           loadHistory();
         } else {
+          planResult.innerHTML = '';
+          resultSection.style.display = 'none';
           alert(data.error || 'Failed to generate plan');
         }
       } catch (err) {
+        planResult.innerHTML = '';
+        resultSection.style.display = 'none';
         alert('Failed to generate plan. Please try again.');
       }
 
