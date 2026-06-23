@@ -342,4 +342,9 @@ body {
   .dashboard-container {
     padding: 0 1rem;
   }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
 }

@@ -119,7 +119,16 @@ router.post('/plan/generate', async function (req, res) {
         messages: [{ role: 'user', content: prompt }]
       })
     });
+    if (!response.ok) {
+      var errText = await response.text();
+      console.error('Groq API error:', response.status, errText);
+      return res.status(502).json({ error: 'AI service error. Please try again in a moment.' });
+    }
     var data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected Groq response:', JSON.stringify(data));
+      return res.status(502).json({ error: 'AI returned an unexpected response. Please try again.' });
+    }
     var generatedPlan = data.choices[0].message.content;
 
     // save plan to MongoDB (skip if DB not available)
@@ -240,7 +249,16 @@ router.put('/plan/:id', async function (req, res) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.GROQ_API_KEY },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }] })
     });
+    if (!response.ok) {
+      var errText = await response.text();
+      console.error('Groq API error:', response.status, errText);
+      return res.status(502).json({ error: 'AI service error. Please try again in a moment.' });
+    }
     var data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected Groq response:', JSON.stringify(data));
+      return res.status(502).json({ error: 'AI returned an unexpected response. Please try again.' });
+    }
     var generatedPlan = data.choices[0].message.content;
 
     await plansCol.updateOne(
