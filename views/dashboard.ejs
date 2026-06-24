@@ -198,12 +198,15 @@
 
     // Render a plan as structured cards or fall back to raw text
     function renderPlan(plan) {
-      if (plan.structured && plan.type === 'meal' && plan.structured.meals) {
-        return renderMealCard(plan.structured);
+      var s = plan.structured;
+      if (!s && plan.generatedPlan) {
+        try {
+          var cleaned = plan.generatedPlan.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+          s = JSON.parse(cleaned);
+        } catch (e) { }
       }
-      if (plan.structured && plan.type === 'fitness' && plan.structured.sections) {
-        return renderFitnessCard(plan.structured);
-      }
+      if (s && s.meals) return renderMealCard(s);
+      if (s && s.sections) return renderFitnessCard(s);
       return formatPlan(plan.generatedPlan);
     }
 
