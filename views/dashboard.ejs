@@ -101,10 +101,10 @@
         if (data.success) {
           if (data.plans) {
             planResult.innerHTML = data.plans.map(function (p) {
-              return '<h3>' + capitalize(p.type) + ' Plan</h3>' + formatPlan(p.generatedPlan);
+              return '<h3 class="plan-section-label">' + capitalize(p.type) + ' Plan</h3>' + renderPlan(p);
             }).join('<hr class="plan-divider">');
           } else {
-            planResult.innerHTML = formatPlan(data.plan.generatedPlan);
+            planResult.innerHTML = renderPlan(data.plan);
           }
           loadHistory();
         } else {
@@ -147,7 +147,7 @@
                 '</div>' +
               '</div>' +
               '<p class="history-goal"><em>Goal: ' + escapeHtml(plan.goal) + '</em></p>' +
-              '<div class="history-plan-text">' + formatPlan(plan.generatedPlan) + '</div>';
+              '<div class="history-plan-text">' + renderPlan(plan) + '</div>';
             historyList.appendChild(planDiv);
           });
         } else {
@@ -196,7 +196,60 @@
       }
     }
 
-    // Format plan text into HTML
+    // Render a plan as structured cards or fall back to raw text
+    function renderPlan(plan) {
+      if (plan.structured && plan.type === 'meal' && plan.structured.meals) {
+        return renderMealCard(plan.structured);
+      }
+      if (plan.structured && plan.type === 'fitness' && plan.structured.sections) {
+        return renderFitnessCard(plan.structured);
+      }
+      return formatPlan(plan.generatedPlan);
+    }
+
+    function renderMealCard(s) {
+      var html = '<div class="structured-plan">';
+      html += '<h3 class="sp-title">' + escapeHtml(s.title) + '</h3>';
+      html += '<p class="sp-summary">' + escapeHtml(s.summary) + '</p>';
+      if (s.dailyTotals) {
+        var t = s.dailyTotals;
+        html += '<div class="sp-totals">';
+        html += '<div class="sp-stat"><span class="sp-stat-value">' + escapeHtml(t.calories) + '</span><span class="sp-stat-label">Calories</span></div>';
+        html += '<div class="sp-stat"><span class="sp-stat-value">' + escapeHtml(t.protein) + '</span><span class="sp-stat-label">Protein</span></div>';
+        html += '<div class="sp-stat"><span class="sp-stat-value">' + escapeHtml(t.carbs) + '</span><span class="sp-stat-label">Carbs</span></div>';
+        html += '<div class="sp-stat"><span class="sp-stat-value">' + escapeHtml(t.fat) + '</span><span class="sp-stat-label">Fat</span></div>';
+        html += '</div>';
+      }
+      html += '<div class="sp-meals">';
+      s.meals.forEach(function (m) {
+        html += '<div class="sp-meal-card">';
+        html += '<div class="sp-meal-header"><span class="sp-meal-name">' + escapeHtml(m.name) + '</span><span class="sp-meal-cal">' + escapeHtml(m.calories) + '</span></div>';
+        html += '<p class="sp-meal-detail"><strong>Ingredients:</strong> ' + escapeHtml(m.ingredients) + '</p>';
+        html += '<p class="sp-meal-detail"><strong>Instructions:</strong> ' + escapeHtml(m.instructions) + '</p>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+      return html;
+    }
+
+    function renderFitnessCard(s) {
+      var html = '<div class="structured-plan">';
+      html += '<h3 class="sp-title">' + escapeHtml(s.title) + '</h3>';
+      html += '<p class="sp-summary">' + escapeHtml(s.summary) + '</p>';
+      s.sections.forEach(function (sec) {
+        html += '<div class="sp-section">';
+        html += '<h4 class="sp-section-heading">' + escapeHtml(sec.heading) + '</h4>';
+        html += '<ul class="sp-section-list">';
+        sec.items.forEach(function (item) {
+          html += '<li>' + escapeHtml(item) + '</li>';
+        });
+        html += '</ul></div>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    // Format plan text into HTML (fallback for non-structured plans)
     function formatPlan(text) {
       return text
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
